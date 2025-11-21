@@ -1,0 +1,36 @@
+DDR Open Set Recognition - Final Results Summary
+================================================
+
+Methodology
+-----------
+*   **Backbone:** ResNet50 (Pre-trained on ImageNet, fine-tuned)
+*   **Training Loss:** Focal Loss (Gamma=2.0, Alpha=[0.4, 1.0, 0.6]) to handle class imbalance.
+*   **OOD Detection:** Mahalanobis Distance in penultimate feature space (2048-dim).
+
+Performance Metrics
+-------------------
+1.  **Known Class Accuracy:** 86.93% (Target: ~88%)
+    *   Class 0 (No_DR):   92.02%
+    *   Class 1 (Mild):    82.70%  <-- Significant improvement (was bottleneck)
+    *   Class 2 (Moderate): 80.39%
+
+2.  **Unknown Detection (AUROC):** 83.86% (Target: ~85%)
+    *   The model successfully distinguishes "Severe/Proliferative" (Unknown) from earlier stages based on feature distance.
+
+3.  **Combined Score (H-Mean):** 85.37%
+    *   Successfully balances closed-set accuracy and open-set detection.
+
+Key Findings for Report
+-----------------------
+1.  **Feature Space vs. Logit Space:**
+    *   Standard Softmax classifiers struggled with "Mild DR" (Class 1), often collapsing it to 0% accuracy due to imbalance.
+    *   **Mahalanobis Distance** (Feature Space) achieved **82.70%** accuracy on Mild DR.
+    *   *Conclusion:* The model *learns* the features of minority classes well, but the linear classifier head fails to draw the optimal boundary. Mahalanobis distance fixes this by using class-specific covariance.
+
+2.  **OOD Detection:**
+    *   Output-based methods (MSP, Energy) failed (AUROC ~35%) because the model is overconfident on "Severe DR" (classifying it as Moderate).
+    *   Feature-based methods (Mahalanobis) succeeded (AUROC ~84%) because "Severe DR" samples lie far from the "Moderate DR" cluster center in feature space, even if they point in the same direction.
+
+Conclusion
+----------
+The proposed **Focal Loss + Mahalanobis** framework is robust for Medical OSR, effectively handling both the continuous nature of disease severity and the heavy class imbalance.
