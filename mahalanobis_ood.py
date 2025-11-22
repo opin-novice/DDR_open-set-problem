@@ -147,7 +147,7 @@ def compute_ood_scores(features, class_means, precision):
     
     return ood_scores, distances
 
-def main():
+def main(model_path='checkpoints/focal_closed_set.pth'):
     print("="*80)
     print("MAHALANOBIS DISTANCE OOD DETECTION")
     print("="*80)
@@ -157,14 +157,11 @@ def main():
     # Load model
     model = ResNet50Classifier(num_classes=3)
     
-    if os.path.exists('checkpoints/focal_closed_set.pth'):
-        model.load_state_dict(torch.load('checkpoints/focal_closed_set.pth'))
-        print("\nLoaded: focal_closed_set.pth")
-    elif os.path.exists('checkpoints/closed_set_model.pth'):
-        model.load_state_dict(torch.load('checkpoints/closed_set_model.pth'))
-        print("\nLoaded: closed_set_model.pth")
+    if os.path.exists(model_path):
+        model.load_state_dict(torch.load(model_path))
+        print(f"\nLoaded: {model_path}")
     else:
-        print("ERROR: No trained model found!")
+        print(f"ERROR: No trained model found at {model_path}!")
         return
     
     if use_gpu:
@@ -245,12 +242,14 @@ def main():
     
     print(f"\nOverall Known Accuracy: {known_acc:.2f}%")
     
+    class_accuracies = {}
     for c in range(3):
         class_mask = test_labels == c
         if class_mask.sum() > 0:
             class_preds = predictions[class_mask]
             class_acc = 100.0 * (class_preds == c).sum() / class_mask.sum()
             print(f"  Class {c}: {class_acc:.2f}%")
+            class_accuracies[c] = class_acc
     
     # Step 6: OOD Detection
     print("\n" + "="*80)
@@ -289,17 +288,17 @@ def main():
     print(f"Combined Score (H-Mean): {combined:.2f}%")
     print("="*80)
     
-    # Success check
-    if known_acc >= 85 and auroc >= 80:
-        print("\n SUCCESS! Both metrics meet targets!")
-    elif auroc >= 80:
-        print("\n GOOD! AUROC meets target. Known accuracy needs improvement.")
-    elif known_acc >= 85:
-        print("\n PARTIAL: Known accuracy good, but AUROC needs improvement.")
-    else:
-        print("\n Both metrics need improvement.")
-    
-    return known_acc, auroc, combined
+    # Return dictionary for reproducibility script
+    return {
+        'known_acc': known_acc,
+        'class_acc': class_accuracies,
+        'auroc': auroc,
+        'combined': combined
+    }
 
 if __name__ == '__main__':
-    main()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_path', type=str, default='checkpoints/focal_closed_set.pth')
+    args = parser.parse_args()
+    main(args.model_path)

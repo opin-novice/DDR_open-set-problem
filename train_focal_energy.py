@@ -7,6 +7,7 @@ Key Change: Using Focal Loss (gamma=2.0) instead of weighted CE
 
 import os
 import sys
+import random
 import numpy as np
 import torch
 import torch.nn as nn
@@ -20,6 +21,24 @@ sys.path.append(project_root)
 
 from datasets import DDR
 from focal_loss import FocalLoss
+
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+def save_splits(dataset, output_dir, prefix='train'):
+    # DDR dataset has image_paths attribute
+    if hasattr(dataset, 'image_paths'):
+        with open(os.path.join(output_dir, f'{prefix}_list.txt'), 'w') as f:
+            for idx in range(len(dataset)):
+                path = dataset.image_paths[idx]
+                label = dataset.targets[idx]
+                f.write(f"{path} {label}\n")
 
 class ResNet50Classifier(nn.Module):
     def __init__(self, num_classes=3):
@@ -36,9 +55,12 @@ class ResNet50Classifier(nn.Module):
 def compute_energy_score(logits, temperature=1.0):
     return -temperature * torch.logsumexp(logits / temperature, dim=1)
 
-def train_with_focal_loss(dataroot, num_epochs=40, batch_size=32, lr=0.001):
+def train_with_focal_loss(dataroot, num_epochs=40, batch_size=32, lr=0.001, seed=42, output_dir='checkpoints'):
+    set_seed(seed)
+    os.makedirs(output_dir, exist_ok=True)
+    
     print("="*80)
-    print("STAGE 1: CLOSED-SET WITH FOCAL LOSS")
+    print(f"STAGE 1: CLOSED-SET WITH FOCAL LOSS (Seed: {seed})")
     print("="*80)
     print("Using Focal Loss (gamma=2.0) to prevent Class 1 collapse")
     
@@ -66,6 +88,10 @@ def train_with_focal_loss(dataroot, num_epochs=40, batch_size=32, lr=0.001):
     
     testset = DDR(root=dataroot, train=False, transform=transform_test,
                   train_class_num=3, test_class_num=5, includes_all_train_class=True)
+    
+    # Save splits
+    save_splits(trainset, output_dir, 'train')
+    save_splits(testset, output_dir, 'test')
     
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=0)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=0)
@@ -167,7 +193,7 @@ def train_with_focal_loss(dataroot, num_epochs=40, batch_size=32, lr=0.001):
         if acc > best_acc or (acc >= best_acc * 0.95 and class1_acc > best_class1_acc):
             best_acc = max(acc, best_acc)
             best_class1_acc = max(class1_acc, best_class1_acc)
-            torch.save(model.state_dict(), 'checkpoints/focal_closed_set.pth')
+            torch.save(model.state_dict(), os.path.join(output_dir, 'model.pth'))
             print(f"  → Saved model (Acc: {acc:.2f}%, Class1: {class1_acc:.2f}%)")
         
         # Early success check
@@ -257,7 +283,13 @@ def evaluate_energy_ood(model, dataroot, temperature=1.0):
     return known_acc, 0.0
 
 if __name__ == '__main__':
-    os.makedirs('checkpoints', exist_ok=True)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--output_dir', type=str, default='checkpoints')
+    args = parser.parse_args()
+    
+    os.makedirs(args.output_dir, exist_ok=True)
     
     print("\n" + "="*80)
     print("FOCAL LOSS CORRECTED TRAINING")
@@ -269,7 +301,8 @@ if __name__ == '__main__':
     print("=" *80)
     
     # Train with Focal Loss
-    model = train_with_focal_loss('DDR dataset', num_epochs=40, batch_size=32, lr=0.001)
+    model = train_with_focal_loss('DDR dataset', num_epochs=40, batch_size=32, lr=0.001, 
+                                seed=args.seed, output_dir=args.output_dir)
     
     # Test multiple temperatures
     print("\n" + "="*80)

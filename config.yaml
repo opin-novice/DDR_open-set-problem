@@ -1,0 +1,24 @@
+project: DDR_OSR
+model:
+  backbone: ResNet50
+  pretrained: True
+  num_classes: 3
+training:
+  epochs: 40
+  batch_size: 32
+  optimizer: AdamW
+  lr_backbone: 0.0001
+  lr_head: 0.001
+  weight_decay: 1e-4
+  scheduler: CosineAnnealingLR
+loss:
+  name: FocalLoss
+  gamma: 2.0
+  alpha: [0.4, 1.0, 0.6]
+ood_detection:
+  method: Mahalanobis
+  feature_layer: penultimate (avgpool)
+  feature_dim: 2048
+  epsilon: 0.01
+reproducibility:
+  seeds: [42, 1, 2024]
