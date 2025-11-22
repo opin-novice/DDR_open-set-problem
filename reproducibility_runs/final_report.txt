@@ -1,0 +1,13 @@
+REPRODUCIBILITY REPORT
+======================
+
+ Seed  Known Acc  AUROC  Combined  Class 0 Acc  Class 1 Acc  Class 2 Acc
+   42      85.90  84.59     85.24        91.05        80.16        79.50
+    1      86.15  84.07     85.10        91.46        81.43        79.38
+ 2024      86.56  85.01     85.78        91.29        79.05        80.99
+
+SUMMARY STATISTICS
+------------------
+        Seed  Known Acc  AUROC  Combined  Class 0 Acc  Class 1 Acc  Class 2 Acc
+mean  689.00      86.20  84.56     85.37        91.27        80.21        79.96
+std  1156.33       0.33   0.47      0.36         0.21         1.19         0.90
