@@ -1,0 +1,52 @@
+Top 10 'Hardest' Glaucoma Samples (Most similar to DR)
+======================================================
+Rank 1: Im655_g_ACRIMA.jpg
+  - Mahalanobis Distance: 56.9569
+  - Closest DR Class: No_DR
+  - Path: DDR dataset/Glaucoma/Database/Images\Im655_g_ACRIMA.jpg
+
+Rank 2: Im655_g_ACRIMA.jpg
+  - Mahalanobis Distance: 56.9575
+  - Closest DR Class: No_DR
+  - Path: DDR dataset/Glaucoma/Database/Images\Im655_g_ACRIMA.jpg
+
+Rank 3: Im444_g_ACRIMA.jpg
+  - Mahalanobis Distance: 57.7271
+  - Closest DR Class: Proliferative
+  - Path: DDR dataset/Glaucoma/Database/Images\Im444_g_ACRIMA.jpg
+
+Rank 4: Im444_g_ACRIMA.jpg
+  - Mahalanobis Distance: 57.7271
+  - Closest DR Class: Proliferative
+  - Path: DDR dataset/Glaucoma/Database/Images\Im444_g_ACRIMA.jpg
+
+Rank 5: Im510_g_ACRIMA.jpg
+  - Mahalanobis Distance: 59.5572
+  - Closest DR Class: Proliferative
+  - Path: DDR dataset/Glaucoma/Database/Images\Im510_g_ACRIMA.jpg
+
+Rank 6: Im510_g_ACRIMA.jpg
+  - Mahalanobis Distance: 59.5575
+  - Closest DR Class: Proliferative
+  - Path: DDR dataset/Glaucoma/Database/Images\Im510_g_ACRIMA.jpg
+
+Rank 7: Im608_g_ACRIMA.jpg
+  - Mahalanobis Distance: 60.8425
+  - Closest DR Class: Proliferative
+  - Path: DDR dataset/Glaucoma/Database/Images\Im608_g_ACRIMA.jpg
+
+Rank 8: Im608_g_ACRIMA.jpg
+  - Mahalanobis Distance: 60.8431
+  - Closest DR Class: Proliferative
+  - Path: DDR dataset/Glaucoma/Database/Images\Im608_g_ACRIMA.jpg
+
+Rank 9: Im381_g_ACRIMA.jpg
+  - Mahalanobis Distance: 61.1922
+  - Closest DR Class: No_DR
+  - Path: DDR dataset/Glaucoma/Database/Images\Im381_g_ACRIMA.jpg
+
+Rank 10: Im381_g_ACRIMA.jpg
+  - Mahalanobis Distance: 61.1922
+  - Closest DR Class: No_DR
+  - Path: DDR dataset/Glaucoma/Database/Images\Im381_g_ACRIMA.jpg
+

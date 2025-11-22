@@ -134,6 +134,40 @@ def main():
     scores_known = mahalanobis_score(test_feats_known, class_means, precision)
     scores_unknown = mahalanobis_score(test_feats_unknown, class_means, precision)
     
+    # --- NEW: Inspect Hardest Samples ---
+    # Find Glaucoma samples with LOWEST Mahalanobis distance (most similar to DR)
+    # We need the filenames for this. Let's modify extract_features or just reload the dataset to get paths.
+    # Since we can't easily change extract_features return signature without breaking things, 
+    # let's just iterate the dataset again for the top 10 indices.
+    
+    print("\nInspecting Hardest Glaucoma Samples...")
+    hardest_indices = np.argsort(scores_unknown)[:10] # Lowest distances
+    
+    with open('hardest_glaucoma_samples.txt', 'w') as f:
+        f.write("Top 10 'Hardest' Glaucoma Samples (Most similar to DR)\n")
+        f.write("======================================================\n")
+        
+        for rank, idx in enumerate(hardest_indices):
+            # Get the image path from the dataset
+            img_path = acrima_set.images[idx]
+            score = scores_unknown[idx]
+            
+            # Find which DR class it was closest to
+            feat = test_feats_unknown[idx]
+            dists = []
+            for c in range(5):
+                centered = feat - class_means[c]
+                d = np.sqrt(np.sum(centered @ precision * centered))
+                dists.append(d)
+            closest_class = np.argmin(dists)
+            class_names = ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative']
+            
+            print(f"Rank {rank+1}: {os.path.basename(img_path)} | Score: {score:.2f} | Confused with: {class_names[closest_class]}")
+            f.write(f"Rank {rank+1}: {os.path.basename(img_path)}\n")
+            f.write(f"  - Mahalanobis Distance: {score:.4f}\n")
+            f.write(f"  - Closest DR Class: {class_names[closest_class]}\n")
+            f.write(f"  - Path: {img_path}\n\n")
+
     # 6. Evaluate
     y_true = np.concatenate([np.zeros(len(scores_known)), np.ones(len(scores_unknown))])
     y_scores = np.concatenate([scores_known, scores_unknown])
