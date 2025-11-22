@@ -14,23 +14,17 @@ The high AUROC confirms that **Mahalanobis + Outlier Exposure** is the correct s
 
 We need to **relax the regularization** to recover Known Accuracy while maintaining the high AUROC.
 
-### 1. Reduce OE Weight
-*   **Current:** `lambda_oe = 0.5`
-*   **New:** `lambda_oe = 0.1`
-*   **Reason:** Allow the model to prioritize Cross-Entropy (accuracy) more.
+### B. Why Glaucoma is "Unknown"
+*   **The "No-Lesion" Problem:** Glaucoma images typically show a clear retina with an enlarged optic cup, but *no hemorrhages or exudates*.
+*   **Confusion with 'No_DR':** The hardest Glaucoma samples are most often confused with **'No_DR'** (Class 0).
+    *   *Reason:* Like 'No_DR', Glaucoma images are free of lesions. The model sees "clean" tissue and thinks, "This looks a bit like a healthy eye."
+*   **The Rejection:** However, even these "confusing" samples have a **Mahalanobis distance > 50**, whereas true 'No_DR' samples typically have distances < 30.
+    *   *Why?* The texture of the optic disc in Glaucoma is distinct enough that it doesn't fit the tight statistical distribution of a normal 'No_DR' fundus.
 
-### 2. Increase Temperature
-*   **Current:** `temp = 0.1`
-*   **New:** `temp = 1.0` (or remove LogitNorm and use standard Softmax)
-*   **Reason:** `temp=0.1` is very aggressive. Standard LogitNorm papers often use learnable alpha or higher temp. Let's try `0.5` or `1.0`.
+## 3. Conclusion
+The model differentiates DR from Glaucoma not by learning what Glaucoma *is*, but by knowing precisely what DR *is not*.
 
-### 3. Refine OE Proxy
-*   **Current:** Mixup + Noise
-*   **New:** **Noise Only** (or Jigsaw)
-*   **Reason:** Mixup between Class 0 (No DR) and Class 1 (Mild DR) creates a valid "Very Mild DR" image. Forcing the model to output "Unknown" on this valid transition might be hurting accuracy. Random noise is safer.
-
-## Action Plan
-I will modify `train_oe_mahalanobis.py` to:
-1.  Set `lambda_oe = 0.1`
-2.  Set `temp = 0.5`
-3.  Use **only Noise** as OE (disable Mixup OE for now to be safe).
+> **Key Takeaway:** The model acts as a **"DR Feature Validator."**
+> *   **Has DR Features?** -> Classify as Mild/Moderate/Severe/Proliferative.
+> *   **No DR Features (Clean)?** -> Check if it fits the strict 'No_DR' statistical profile.
+> *   **Neither?** -> **Reject as Unknown (Glaucoma/Other).**
