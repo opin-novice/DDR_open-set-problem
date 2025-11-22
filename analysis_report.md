@@ -1,9 +1,5 @@
 # Analysis of Mahalanobis + OE Results
 
-## Current Performance
-*   **AUROC:** 86.59% (✅ **Excellent** - Meets target >85%)
-*   **Known Accuracy:** 78.82% (❌ **Too Low** - Target >85-90%)
-
 ## Diagnosis
 The high AUROC confirms that **Mahalanobis + Outlier Exposure** is the correct strategy for detecting unknowns. However, the low accuracy suggests:
 1.  **Over-Regularization:** The Outlier Exposure loss weight (`lambda_oe = 0.5`) might be too high, forcing the model to be too uncertain even on hard known samples (which look like outliers).

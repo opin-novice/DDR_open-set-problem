@@ -1,0 +1,11 @@
+ROC Curve Statistics
+============================================================
+AUROC: 0.9985 (99.85%)
+Optimal Threshold: 66.18
+  - True Positive Rate (Sensitivity): 0.9747 (97.47%)
+  - False Positive Rate: 0.0111 (1.11%)
+  - Specificity: 0.9889 (98.89%)
+============================================================
+
+Known samples: 12522
+Unknown samples: 792
