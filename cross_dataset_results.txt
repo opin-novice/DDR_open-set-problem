@@ -1,6 +1,6 @@
 Cross-Dataset OSR Results
 Known: DDR (5 classes)
 Unknown: ACRIMA (Glaucoma)
-Known Accuracy: 94.76%
-AUROC: 99.85%
-H-mean: 97.24%
+Known Accuracy: 79.81%
+AUROC: 99.42%
+H-mean: 88.54%

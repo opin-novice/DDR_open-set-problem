@@ -41,18 +41,22 @@ def train_full_ddr(
         transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
     ])
     
-    # Load FULL DDR dataset (train_class_num=5)
-    print("\nLoading DDR Dataset (5 Classes)...")
-    trainset = DDR(root=dataroot, train=True, transform=transform_train, 
+    # Load FULL DDR dataset (train_class_num=5) with proper splits
+    print("\nLoading DDR Dataset (5 Classes) with 70/15/15 split...")
+    trainset = DDR(root=dataroot, split='train', transform=transform_train, 
                    train_class_num=5, test_class_num=5, includes_all_train_class=True)
-    testset = DDR(root=dataroot, train=False, transform=transform_test, 
+    valset = DDR(root=dataroot, split='val', transform=transform_test, 
+                 train_class_num=5, test_class_num=5, includes_all_train_class=True)
+    testset = DDR(root=dataroot, split='test', transform=transform_test, 
                   train_class_num=5, test_class_num=5, includes_all_train_class=True)
     
     trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+    valloader = DataLoader(valset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
     testloader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4, pin_memory=True)
     
-    print(f"Training samples: {len(trainset)}")
-    print(f"Testing samples: {len(testset)}")
+    print(f"Training samples: {len(trainset)} (70%)")
+    print(f"Validation samples: {len(valset)} (15%)")
+    print(f"Testing samples: {len(testset)} (15%)")
     
     # 2. Model Setup
     print("\nInitializing ResNet50...")
@@ -68,7 +72,7 @@ def train_full_ddr(
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=num_epochs)
     
     # 4. Training Loop
-    best_acc = 0.0
+    best_val_acc = 0.0
     
     for epoch in range(num_epochs):
         model.train()
@@ -93,13 +97,13 @@ def train_full_ddr(
         train_acc = 100.0 * correct / total
         scheduler.step()
         
-        # Validation
+        # Validation (using proper validation set, NOT test set)
         model.eval()
         val_correct = 0
         val_total = 0
         
         with torch.no_grad():
-            for inputs, labels in testloader:
+            for inputs, labels in valloader:
                 inputs, labels = inputs.to(device), labels.to(device)
                 outputs = model(inputs)
                 _, predicted = outputs.max(1)
@@ -113,15 +117,36 @@ def train_full_ddr(
               f"Train Acc: {train_acc:.2f}% | "
               f"Val Acc: {val_acc:.2f}%")
         
-        # Save best model
-        if val_acc > best_acc:
-            best_acc = val_acc
+        # Save best model based on validation accuracy
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
             save_path = os.path.join(output_dir, 'resnet50_full_5class.pth')
             torch.save(model.state_dict(), save_path)
-            print(f"  >>> New Best Model Saved! ({best_acc:.2f}%)")
+            print(f"  >>> New Best Model Saved! (Val Acc: {best_val_acc:.2f}%)")
+    
+    # 5. Final Test Set Evaluation (only at the very end)
+    print("\n" + "="*80)
+    print("FINAL EVALUATION ON TEST SET (Unseen During Training)")
+    print("="*80)
+    
+    model.eval()
+    test_correct = 0
+    test_total = 0
+    
+    with torch.no_grad():
+        for inputs, labels in testloader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = model(inputs)
+            _, predicted = outputs.max(1)
+            test_total += labels.size(0)
+            test_correct += predicted.eq(labels).sum().item()
+            
+    test_acc = 100.0 * test_correct / test_total
             
     print("\n" + "="*80)
-    print(f"Training Complete. Best Accuracy: {best_acc:.2f}%")
+    print(f"Training Complete!")
+    print(f"Best Validation Accuracy: {best_val_acc:.2f}%")
+    print(f"Final Test Accuracy: {test_acc:.2f}%")
     print(f"Model saved to: {os.path.join(output_dir, 'resnet50_full_5class.pth')}")
     print("="*80)
 

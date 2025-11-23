@@ -1,0 +1,12 @@
+Focal Loss Training Report (80/10/10 Split)
+============================================================
+Best Validation Accuracy: 82.68%
+Final Test Accuracy: 81.72%
+Training stopped at epoch: 46
+
+Per-Class Test Accuracy:
+  No_DR          : 93.94%
+  Mild           : 11.11%
+  Moderate       : 78.35%
+  Severe         : 45.83%
+  Proliferative  : 72.53%

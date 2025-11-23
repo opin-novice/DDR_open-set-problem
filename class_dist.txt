@@ -1,0 +1,64 @@
+﻿Original classes: ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative_DR']
+Split: train, Training with 5 known classes, Testing with 5 total classes
+Updated classes: ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative_DR', 'unknown']
+Train data includes 6 classes (5 original classes), 8764 samples.
+Original classes: ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative_DR']
+Split: val, Training with 5 known classes, Testing with 5 total classes
+Updated classes: ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative_DR', 'unknown']
+Val data includes 6 classes (5 original classes), 1879 samples.
+Original classes: ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative_DR']
+Split: test, Training with 5 known classes, Testing with 5 total classes
+Updated classes: ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative_DR', 'unknown']
+Test data includes 6 classes (5 original classes), 1879 samples.
+During testing, openness is 0.0000.
+================================================================================
+CLASS DISTRIBUTION ANALYSIS
+================================================================================
+
+TRAIN SET (8764 samples):
+------------------------------------------------------------
+  No_DR          :  4386 samples (50.05%)
+  Mild           :   441 samples ( 5.03%)
+  Moderate       :  3133 samples (35.75%)
+  Severe         :   165 samples ( 1.88%)
+  Proliferative  :   639 samples ( 7.29%)
+
+VAL SET (1879 samples):
+------------------------------------------------------------
+  No_DR          :   940 samples (50.03%)
+  Mild           :    94 samples ( 5.00%)
+  Moderate       :   672 samples (35.76%)
+  Severe         :    36 samples ( 1.92%)
+  Proliferative  :   137 samples ( 7.29%)
+
+TEST SET (1879 samples):
+------------------------------------------------------------
+  No_DR          :   940 samples (50.03%)
+  Mild           :    95 samples ( 5.06%)
+  Moderate       :   672 samples (35.76%)
+  Severe         :    35 samples ( 1.86%)
+  Proliferative  :   137 samples ( 7.29%)
+
+================================================================================
+OVERALL DISTRIBUTION (All 25,044 images)
+================================================================================
+  No_DR          :  6266 samples (50.04%)
+  Mild           :   630 samples ( 5.03%)
+  Moderate       :  4477 samples (35.75%)
+  Severe         :   236 samples ( 1.88%)
+  Proliferative  :   913 samples ( 7.29%)
+
+================================================================================
+STRATIFICATION CHECK
+================================================================================
+
+Class distribution should be similar across all splits:
+Class           Overall    Train      Val        Test      
+------------------------------------------------------------
+No_DR               50.04%     50.05%     50.03%     50.03%
+Mild                 5.03%      5.03%      5.00%      5.06%
+Moderate            35.75%     35.75%     35.76%     35.76%
+Severe               1.88%      1.88%      1.92%      1.86%
+Proliferative        7.29%      7.29%      7.29%      7.29%
+
+================================================================================

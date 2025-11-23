@@ -104,7 +104,7 @@ def main():
     ])
     
     # Known: DDR Test Set (All 5 classes)
-    ddr_set = DDR(root='DDR dataset', train=False, transform=transform, 
+    ddr_set = DDR(root='DDR dataset', split='test', transform=transform, 
                   train_class_num=5, test_class_num=5, includes_all_train_class=True)
     ddr_loader = DataLoader(ddr_set, batch_size=32, shuffle=False, num_workers=4)
     
@@ -115,7 +115,7 @@ def main():
     # 3. Extract Features
     print("\nExtracting features from DDR (Known)...")
     # We need training features to compute class statistics
-    ddr_train_set = DDR(root='DDR dataset', train=True, transform=transform, 
+    ddr_train_set = DDR(root='DDR dataset', split='train', transform=transform, 
                         train_class_num=5, test_class_num=5, includes_all_train_class=True)
     ddr_train_loader = DataLoader(ddr_train_set, batch_size=32, shuffle=False, num_workers=4)
     

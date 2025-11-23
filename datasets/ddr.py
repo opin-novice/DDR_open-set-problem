@@ -50,11 +50,17 @@ class DDR(VisionDataset):
         warnings.warn("test_data has been renamed data")
         return self.data
 
-    def __init__(self, root, train=True, transform=None, target_transform=None,
+    def __init__(self, root, train=True, split=None, transform=None, target_transform=None,
                  download=False, train_class_num=3, test_class_num=5, includes_all_train_class=True):
         super(DDR, self).__init__(root, transform=transform,
                                     target_transform=target_transform)
-        self.train = train  # training set or test set
+        
+        # Handle backward compatibility: if split is None, use train parameter
+        if split is None:
+            split = 'train' if train else 'test'
+        
+        self.split = split  # 'train', 'val', or 'test'
+        self.train = (split == 'train')  # For backward compatibility
         self.train_class_num = train_class_num
         self.test_class_num = test_class_num
         self.includes_all_train_class = includes_all_train_class
@@ -66,14 +72,46 @@ class DDR(VisionDataset):
                                'or put it in the root directory.')
 
         dataframe = pd.read_csv(csv_path)
-        self.image_paths = dataframe.iloc[:, 0].values  # First column contains image IDs
-        self.targets = dataframe.iloc[:, 1].values     # Second column contains labels
+        all_image_paths = dataframe.iloc[:, 0].values  # First column contains image IDs
+        all_targets = dataframe.iloc[:, 1].values     # Second column contains labels
 
         # Convert targets to integers
-        self.targets = self.targets.astype(np.int64)
+        all_targets = all_targets.astype(np.int64)
 
         # Define classes (0 to 4 for DDR - representing different stages of diabetic retinopathy)
         self.classes = ['No_DR', 'Mild', 'Moderate', 'Severe', 'Proliferative_DR']
+
+        # Implement 80/10/10 train/val/test split with stratification
+        from sklearn.model_selection import train_test_split
+        
+        # Split into train+val (90%) and test (10%)
+        train_val_idx, test_idx = train_test_split(
+            np.arange(len(all_targets)),
+            test_size=0.10,
+            stratify=all_targets,
+            random_state=42  # Fixed seed for reproducibility
+        )
+        
+        # Split train+val into train (80% of total = 88.89% of train+val) and val (10% of total)
+        train_idx, val_idx = train_test_split(
+            train_val_idx,
+            test_size=0.10/0.90,  # 10% of total / 90% of total = ~11.11% of train+val
+            stratify=all_targets[train_val_idx],
+            random_state=42
+        )
+        
+        # Select data based on split
+        if self.split == 'train':
+            selected_idx = train_idx
+        elif self.split == 'val':
+            selected_idx = val_idx
+        elif self.split == 'test':
+            selected_idx = test_idx
+        else:
+            raise ValueError(f"Invalid split: {self.split}. Must be 'train', 'val', or 'test'")
+        
+        self.image_paths = all_image_paths[selected_idx]
+        self.targets = all_targets[selected_idx]
 
         # Initialize dataset attributes
         self.train_class_num_actual = train_class_num
@@ -113,9 +151,42 @@ class DDR(VisionDataset):
 
         print(f"Updated classes: {self.classes}")
 
-        # Create boolean mask for selecting samples based on train/test split
-        if self.train:
-            # Training phase: only use samples from training classes
+    def _update_open_set(self, train_class_num=3, test_class_num=5, includes_all_train_class=True):
+        """
+        Update the dataset to simulate open set recognition scenario
+        :param train_class_num: Number of known classes for training
+        :param test_class_num: Number of classes to include in testing
+        :param includes_all_train_class: Whether to include all training classes in test
+        """
+        print(f"Original classes: {self.classes}")
+        print(f"Split: {self.split}, Training with {train_class_num} known classes, Testing with {test_class_num} total classes")
+
+        # Define class list (0 to 4 for DDR dataset)
+        class_list = list(range(len(self.classes)))
+
+        # Select training classes (typically 0 to train_class_num-1)
+        train_classes = list(range(train_class_num))
+
+        # For testing, select test_class_num classes
+        if includes_all_train_class:
+            # Include all training classes plus additional unknown classes
+            test_classes = train_classes + list(range(train_class_num, test_class_num))
+        else:
+            # Randomly select classes
+            test_classes = list(range(test_class_num))
+
+        # Update classes to include 'unknown' label
+        selected_elements = [self.classes[index] for index in train_classes]
+        selected_elements.append('unknown')
+        self.classes = selected_elements
+
+        print(f"Updated classes: {self.classes}")
+
+        # Create boolean mask for selecting samples based on split
+        # For train and val: only use samples from training classes
+        # For test: use samples from test classes
+        if self.split in ['train', 'val']:
+            # Training/Validation phase: only use samples from training classes
             indexes = [i for i, x in enumerate(self.targets) if int(x) in train_classes]
         else:
             # Testing phase: use samples from test classes
@@ -132,14 +203,14 @@ class DDR(VisionDataset):
         self.test_classes_actual = test_classes
 
         # Update targets to map to new class indices
-        if self.train:
-            # In training, convert known classes to their respective indices
+        if self.split in ['train', 'val']:
+            # In training/validation, convert known classes to their respective indices
             new_targets = []
             for target in self.targets:
                 if int(target) in self.train_classes_actual:
                     new_targets.append(self.train_classes_actual.index(int(target)))
                 else:
-                    # This shouldn't happen in training since we filtered to only include train_classes
+                    # This shouldn't happen in training/val since we filtered to only include train_classes
                     new_targets.append(0)  # Default to first class for safety
             self.targets = new_targets
         else:
@@ -155,11 +226,11 @@ class DDR(VisionDataset):
 
         self.targets = np.array(self.targets)
 
-        print(f"{'Training' if self.train else 'Testing'} data includes {self.train_class_num_actual + 1} classes "
-              f"({self.train_class_num_actual if self.train else self.test_class_num_actual} original classes), "
+        print(f"{self.split.capitalize()} data includes {self.train_class_num_actual + 1} classes "
+              f"({self.train_class_num_actual if self.split in ['train', 'val'] else self.test_class_num_actual} original classes), "
               f"{len(self.targets)} samples.")
 
-        if not self.train:
+        if self.split == 'test':
             # Calculate openness for test set
             unique_targets = np.unique(self.targets)
             num_known_in_test = len([t for t in unique_targets if t < self.train_class_num_actual])
