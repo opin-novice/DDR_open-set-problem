@@ -1,12 +1,12 @@
-Focal Loss Training Report (80/10/10 Split)
+CBAM Model - OSR Evaluation Results
 ============================================================
-Best Validation Accuracy: 82.36%
-Final Test Accuracy: 80.29%
-Training stopped at epoch: 43
+Closed-Set Accuracy: 80.29%
 
-Per-Class Test Accuracy:
+Per-Class Accuracy:
   No_DR          : 92.03%
   Mild           : 15.87%
   Moderate       : 77.23%
   Severe         : 45.83%
   Proliferative  : 68.13%
+
+OSR AUROC: 97.72%

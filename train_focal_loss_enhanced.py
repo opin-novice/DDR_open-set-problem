@@ -42,7 +42,9 @@ def train_with_focal_loss(
     batch_size=32,
     lr=0.001,
     output_dir='checkpoints',
-    patience=10  # Increased from 5 to 10
+    patience=10,  # Increased from 5 to 10
+    use_cbam=False,
+    dry_run=False
 ):
     print("="*80)
     print("FINAL EXPERT-TUNED TRAINING: FOCAL LOSS + AGGRESSIVE OVERSAMPLING")
@@ -146,8 +148,14 @@ def train_with_focal_loss(
     
     
     # 2. Model Setup
-    print("\nInitializing ResNet50...")
-    model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+    if use_cbam:
+        print("\nInitializing ResNet50 with CBAM (Attention)...")
+        from models.resnet_cbam import resnet50_cbam
+        model = resnet50_cbam(pretrained=True)
+    else:
+        print("\nInitializing Standard ResNet50...")
+        model = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+        
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, 5)
     model = model.to(device)
@@ -175,7 +183,8 @@ def train_with_focal_loss(
         class_correct = np.zeros(5)
         class_total = np.zeros(5)
         
-        for inputs, labels in trainloader:
+        for i, (inputs, labels) in enumerate(trainloader):
+            if dry_run and i >= 5: break
             inputs, labels = inputs.to(device), labels.to(device)
             
             optimizer.zero_grad()
@@ -349,4 +358,17 @@ def train_with_focal_loss(
     print("="*80)
 
 if __name__ == "__main__":
-    train_with_focal_loss()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--use_cbam', action='store_true', help='Use ResNet50 with CBAM')
+    parser.add_argument('--dry_run', action='store_true', help='Run a short dry run')
+    parser.add_argument('--epochs', type=int, default=50, help='Number of epochs')
+    args = parser.parse_args()
+    
+    # Update function signature to accept these if needed, or just pass them
+    # Since the function signature is fixed in the previous definition, we need to update it or pass via kwargs if we change it.
+    # Let's update the function signature in the next step or just call it with updated args if we modify the definition.
+    # Actually, I need to modify the function definition first to accept these.
+    # For now, let's just pass them and I will update the function definition in a separate edit.
+    
+    train_with_focal_loss(use_cbam=args.use_cbam, num_epochs=args.epochs, dry_run=args.dry_run)

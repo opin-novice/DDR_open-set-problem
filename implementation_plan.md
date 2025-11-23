@@ -1,52 +1,60 @@
-# Implementation Plan - Cross-Dataset OSR (DDR vs. ACRIMA)
+# 🚀 Implementation Plan: Improving DDR OSR Performance
 
-## Goal
-Train a model on the full **DDR dataset (5 classes)** to recognize all stages of Diabetic Retinopathy, and use the **ACRIMA dataset** (Glaucoma) as the "Unknown" class for Open Set Recognition.
+**Goal**: Improve Known Class Accuracy (specifically Mild/Severe) while maintaining >99% AUROC for Unknown Detection.
 
-## User Review Required
-> [!IMPORTANT]
-> **Dataset Action:** Please download the **ACRIMA** dataset.
-> **Download Link:** [Figshare (Direct Link)](https://figshare.com/s/c2d31f850af14c5b5232) or [Kaggle](https://www.kaggle.com/datasets/felipekitamura/acrima).
-> **Destination:** Please extract it to: `e:\Open-Set-Recognition-master\datasets\ACRIMA`
-> **Expected Structure:**
-> ```
-> datasets/
->   ACRIMA/
->     Images/
->       Glaucoma/
->       Normal/
-> ```
+## 1. Diagnosis Summary
+- **Current Status**: Strong OSR (99.42% AUROC), Weak Fine-grained Classification (Mild 11%, Severe 46%).
+- **Root Cause**: ResNet50 struggles with subtle, fine-grained features (microaneurysms, specific hemorrhage counts) needed for Mild/Severe differentiation.
+- **Constraint**: Any change must **not** degrade the feature space separation that enables high OSR performance.
 
-## Proposed Changes
+## 2. Proposed Changes
 
-### 1. Data Preparation
-#### [NEW] `datasets/acrima.py`
-- Create `AcrimDataset` class.
-- Load images from `datasets/ACRIMA/Images/Glaucoma` (we only need the Glaucoma ones for "Unknowns").
-- Assign label `5` (Unknown).
-- Apply `transforms.Resize((224, 224))` and normalization.
+### Phase 1: Robust Inference (Low Risk)
+**Objective**: Boost performance without retraining.
+- **Technique**: **Test Time Augmentation (TTA)**.
+- **Method**: Average predictions across 5 augmented versions of each test image (HorizontalFlip, VerticalFlip, slight Rotation).
+- **Expected Impact**: +1-3% overall accuracy, potential stabilization of Mild predictions.
+- **Risk**: None (Inference only).
 
-### 2. Model Modification
-#### [NEW] `train_full_ddr.py`
-- Based on `train_oe_mahalanobis.py`.
-- **Change:** `num_classes = 5` (No_DR, Mild, Moderate, Severe, Proliferative).
-- **Change:** Use `train_class_num=5` for DDR loader.
-- **Output:** Save to `checkpoints/resnet50_full_5class.pth`.
+### Phase 2: Model Enhancement (Medium Risk)
+**Objective**: Improve fine-grained feature extraction for Severe/Mild classes.
+- **Technique**: **CBAM (Convolutional Block Attention Module)**.
+- **Method**: Integrate Channel and Spatial Attention modules into the ResNet50 bottleneck blocks.
+- **Rationale**: Helps model focus on small lesions (microaneurysms) rather than background noise.
+- **Expected Impact**: Significant improvement in Severe class (counting features).
+- **Risk**: Low. Attention usually improves feature discriminability, which helps OSR.
 
-### 3. Evaluation Pipeline
-#### [NEW] `evaluate_cross_dataset.py`
-- Load `resnet50_full_5class.pth`.
-- **Step 1:** Extract features from DDR Test Set (All 5 classes) -> These are "Knowns".
-- **Step 2:** Extract features from ACRIMA (Glaucoma) -> These are "Unknowns".
-- **Step 3:** Compute Mahalanobis Distance.
-- **Step 4:** Calculate AUROC (DDR vs ACRIMA).
+### Phase 3: Training Stabilization (Medium Risk)
+**Objective**: Prevent overconfidence in majority classes (No_DR) and improve generalization.
+- **Technique**: **Label Smoothing (ε=0.1)**.
+- **Method**: Replace hard 0/1 targets with soft targets (0.9 for true class, 0.025 for others).
+- **Rationale**: Prevents the model from becoming too confident on "easy" No_DR samples, potentially encouraging it to learn more robust features for "hard" Mild samples.
+- **Expected Impact**: Better calibration, potentially better OSR scores.
+- **Risk**: Low. Generally helps OSR.
 
-## Verification Plan
+## 3. Implementation Steps
 
-### Automated Tests
-- **Dataset Check:** Script to verify `datasets/ACRIMA` exists and contains images.
-- **Model Check:** Verify model outputs 5 scores.
+### Step 1: Implement TTA
+- [ ] Create `evaluate_tta.py`.
+- [ ] Implement 5-crop/flip averaging.
+- [ ] Evaluate on Test Set and Cross-Dataset (OSR).
 
-### Manual Verification
-- **AUROC Target:** We hope for > 85% AUROC.
-- **Sanity Check:** Ensure the model doesn't classify Glaucoma as "Mild DR" (it should have high Mahalanobis distance).
+### Step 2: Integrate CBAM
+- [ ] Modify `models/resnet_cbam.py` (or similar).
+- [ ] Add CBAM blocks to ResNet architecture.
+- [ ] Retrain with best hyperparameters (80/10/10 split, Focal Loss γ=3.0).
+
+### Step 3: Label Smoothing
+- [ ] Modify `train_focal_loss_enhanced.py` to support Label Smoothing Cross Entropy (or combine with Focal Loss).
+- [ ] Retrain and compare.
+
+## 4. Verification Plan
+For each change:
+1. **Check Closed-Set Accuracy**: Must improve (or at least maintain) overall accuracy > 81%.
+2. **Check Per-Class Accuracy**: Monitor Mild/Severe specifically.
+3. **Check OSR AUROC**: **MUST remain > 99%**.
+
+## 5. Timeline
+- **TTA**: ~1 hour (Coding + Eval)
+- **CBAM**: ~2-3 hours (Coding + Training)
+- **Label Smoothing**: ~2 hours (Coding + Training)

@@ -1,0 +1,9 @@
+TTA Results (5-view)
+Accuracy: 78.12%
+AUROC: 98.17%
+Per-Class Accuracy:
+  No_DR: 96.88%
+  Mild: 20.00%
+  Moderate: 72.73%
+  Severe: nan%
+  Proliferative: 40.00%
